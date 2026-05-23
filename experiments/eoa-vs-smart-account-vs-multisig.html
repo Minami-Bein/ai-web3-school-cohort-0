@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EOA vs 智能账户 vs 多签账户 — 权限对比</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #020617;
+  font-family: 'JetBrains Mono', monospace;
+  color: #f8fafc;
+  padding: 20px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #34d399;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(0.85); }
+}
+h1 { font-size: 17px; font-weight: 700; }
+.subtitle { font-size: 10px; color: #64748b; margin-top: 4px; }
+
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* ─── Comparison table ─── */
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 2fr 2fr 2.5fr;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.th {
+  background: rgba(15,23,42,0.6);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+  border: 1.5px solid;
+}
+.th-eoa   { border-color: #ef4444; }
+.th-smart { border-color: #8b5cf6; }
+.th-multi { border-color: #06b6d4; }
+.th-label { font-size: 10px; font-weight: 700; margin-bottom: 3px; }
+.th-sub   { font-size: 8px; opacity: 0.65; }
+.th-eoa   .th-label { color: #fca5a5; }
+.th-smart .th-label { color: #c4b5fd; }
+.th-multi .th-label { color: #67e8f9; }
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 2fr 2fr 2fr 2.5fr;
+  gap: 10px;
+}
+.cell {
+  background: rgba(15,23,42,0.4);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 2px solid;
+}
+.cell-eoa   { border-color: #ef4444; }
+.cell-smart { border-color: #8b5cf6; }
+.cell-multi { border-color: #06b6d4; }
+.cell-label { font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.cell-val { font-size: 9px; color: #e2e8f0; line-height: 1.6; }
+.cell-val .tag {
+  display: inline-block;
+  font-size: 7px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.tag-yes { background:rgba(16,185,129,0.2); color:#6ee7b7; }
+.tag-no  { background:rgba(239,68,68,0.2);  color:#f87171; }
+.tag-warn{ background:rgba(245,158,11,0.2);  color:#fbbf24; }
+.tag-risk{ background:rgba(239,68,68,0.2);  color:#f87171; }
+
+/* ─── Account type cards ─── */
+.cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.acard {
+  background: rgba(15,23,42,0.5);
+  border-radius: 10px;
+  padding: 14px;
+  border: 1.5px solid;
+}
+.acard-eoa   { border-color: rgba(239,68,68,0.4); }
+.acard-smart { border-color: rgba(139,92,246,0.4); }
+.acard-multi { border-color: rgba(6,182,212,0.4); }
+
+.acard-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.acard-icon { font-size:20px; }
+.acard-title { font-size:11px; font-weight:700; }
+.acard-eoa   .acard-title { color:#fca5a5; }
+.acard-smart .acard-title { color:#c4b5fd; }
+.acard-multi .acard-title { color:#67e8f9; }
+.acard-subtitle { font-size:8px; color:#64748b; margin-top:1px; }
+
+.acard-body { font-size:8.5px; color:#94a3b8; line-height:1.7; }
+.acard-body .line { margin-bottom:4px; padding-left:6px; border-left:2px solid; }
+.acard-eoa   .line { border-color:#ef4444; }
+.acard-smart .line { border-color:#8b5cf6; }
+.acard-multi .line { border-color:#06b6d4; }
+.acard-body .line strong { color:#e2e8f0; }
+
+/* ─── Flow: who can do what ─── */
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.flow-col { text-align: center; }
+.flow-col-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e293b;
+}
+.flow-item {
+  background: rgba(15,23,42,0.4);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1px solid;
+  text-align: left;
+}
+.flow-item.eoa   { border-color: rgba(239,68,68,0.3); }
+.flow-item.smart { border-color: rgba(139,92,246,0.3); }
+.flow-item.multi { border-color: rgba(6,182,212,0.3); }
+.flow-item .fi-who { font-size: 8px; font-weight: 700; margin-bottom: 3px; }
+.eoa   .fi-who { color: #fca5a5; }
+.smart .fi-who { color: #c4b5fd; }
+.multi .fi-who { color: #67e8f9; }
+.flow-item .fi-desc { font-size: 8px; color: #94a3b8; line-height: 1.5; }
+
+/* ─── Risk section ─── */
+.risks-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.risk-block {
+  background: rgba(239,68,68,0.05);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 8px;
+  padding: 12px;
+}
+.risk-block-title { font-size: 9px; font-weight: 700; color: #f87171; margin-bottom: 8px; text-transform: uppercase; }
+.risk-item { margin-bottom: 6px; }
+.risk-item .ri-title { font-size: 8.5px; font-weight: 700; color: #fca5a5; margin-bottom: 2px; }
+.risk-item .ri-desc { font-size: 7.5px; color: #94a3b8; line-height: 1.5; }
+
+/* ─── AI Agent recommendation ─── */
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.rec-card {
+  background: rgba(139,92,246,0.06);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 8px;
+  padding: 12px 10px;
+  text-align: center;
+}
+.rec-card .rc-icon { font-size: 18px; margin-bottom: 6px; }
+.rec-card .rc-title { font-size: 8.5px; font-weight: 700; color: #c4b5fd; margin-bottom: 4px; }
+.rec-card .rc-desc { font-size: 7.5px; color: #94a3b8; line-height: 1.5; }
+.rec-card .rc-use  { font-size: 7.5px; color: #6ee7b7; margin-top: 4px; font-weight: 700; }
+
+/* ─── 5-sentence summary ─── */
+.summary-box {
+  background: rgba(16,185,129,0.06);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.summary-box .sb-title { font-size: 10px; font-weight: 700; color: #6ee7b7; margin-bottom: 10px; text-transform: uppercase; }
+.summary-item { margin-bottom: 8px; padding-left: 10px; border-left: 2px solid #10b981; }
+.summary-item .si-label { font-size: 8px; font-weight: 700; color: #10b981; margin-bottom: 2px; }
+.summary-item .si-text { font-size: 8.5px; color: #94a3b8; line-height: 1.6; }
+
+.footer {
+  text-align: center;
+  font-size: 8px;
+  color: #334155;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #1e293b;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="dot"></div>
+  <div>
+    <h1>EOA vs 智能账户 vs 多签账户 — 权限对比</h1>
+    <div class="subtitle">谁能发起交易 · 谁能批准 · 谁承担风险 · 适用场景 · 安全边界</div>
+  </div>
+</div>
+
+<!-- Account type overview -->
+<div class="card">
+  <div class="section-title">▸ 账户类型概览</div>
+  <div class="cards-row">
+    <div class="acard acard-eoa">
+      <div class="acard-header">
+        <div class="acard-icon">🔑</div>
+        <div>
+          <div class="acard-title">EOA</div>
+          <div class="acard-subtitle">External Owned Account</div>
+        </div>
+      </div>
+      <div class="acard-body">
+        <div class="line"><strong>Metamask 创建的账户</strong>，由私钥完全控制</div>
+        <div class="line">私钥 = 资产所有权，无任何中间层</div>
+        <div class="line">单点故障：<strong style="color:#f87171">私钥丢 = 资产永久丢失</strong></div>
+        <div class="line">无法设置限额、无法恢复、无法多人共管</div>
+      </div>
+    </div>
+    <div class="acard acard-smart">
+      <div class="acard-header">
+        <div class="acard-icon">🤖</div>
+        <div>
+          <div class="acard-title">智能账户</div>
+          <div class="acard-subtitle">Smart Account / ERC-4337</div>
+        </div>
+      </div>
+      <div class="acard-body">
+        <div class="line"><strong>合约代码控制</strong>账户，可编程权限规则</div>
+        <div class="line">可设支出限额、社交恢复、时间锁</div>
+        <div class="line">第三方 Paymaster 可代付 gas</div>
+        <div class="line">AI Agent 钱包的最佳选择：<strong style="color:#c4b5fd">有权做事，但不等于完全控制</strong></div>
+      </div>
+    </div>
+    <div class="acard acard-multi">
+      <div class="acard-header">
+        <div class="acard-icon">🔐</div>
+        <div>
+          <div class="acard-title">多签账户</div>
+          <div class="acard-subtitle">Multi-signature / Safe</div>
+        </div>
+      </div>
+      <div class="acard-body">
+        <div class="line"><strong>N 个人持私钥，X 人签名</strong>才可执行交易</div>
+        <div class="line">典型配置：2/3（3人中需2人确认）</div>
+        <div class="line">单人被黑不会直接损失，需多人合谋</div>
+        <div class="line">企业合规、DAO 金库首选：<strong style="color:#67e8f9">分布式信任</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Comparison table -->
+<div class="card">
+  <div class="section-title">▸ 权限对比矩阵</div>
+  <div class="table-header">
+    <div></div>
+    <div class="th th-eoa">
+      <div class="th-label">EOA</div>
+      <div class="th-sub">External Owned Account</div>
+    </div>
+    <div class="th th-smart">
+      <div class="th-label">智能账户</div>
+      <div class="th-sub">Smart Account / ERC-4337</div>
+    </div>
+    <div class="th th-multi">
+      <div class="th-label">多签账户</div>
+      <div class="th-sub">Multi-sig / Safe</div>
+    </div>
+  </div>
+
+  <!-- Row: 控制权 -->
+  <div class="compare-grid" style="margin-bottom:8px;">
+    <div class="cell cell-label" style="border:none; background:none; padding:10px 8px;">
+      <div class="cell-label" style="font-size:8.5px; color:#94a3b8; font-weight:700;">控制权持有者</div>
+    </div>
+    <div class="cell cell-eoa">
+      <div class="cell-val">单人或单人（私钥持有者）<br>私钥 = 100% 控制权，无中间层</div>
+    </div>
+    <div class="cell cell-smart">
+      <div class="cell-val">合约代码（可编程规则）<br>私钥签名 → 触发合约逻辑</div>
+    </div>
+    <div class="cell cell-multi">
+      <div class="cell-val">N 个人（多私钥持有者）<br>需达到门槛 X 人确认</div>
+    </div>
+  </div>
+
+  <!-- Row: 发起交易 -->
+  <div class="compare-grid" style="margin-bottom:8px;">
+    <div class="cell cell-label" style="border:none; background:none; padding:10px 8px;">
+      <div class="cell-label" style="font-size:8.5px; color:#94a3b8; font-weight:700;">谁能发起交易</div>
+    </div>
+    <div class="cell cell-eoa">
+      <div class="cell-val">仅私钥持有者<br>一人签名 = 直接执行</div>
+    </div>
+    <div class="cell cell-smart">
+      <div class="cell-val">授权的 EOA 或其他合约<br>权限范围内才可触发</div>
+    </div>
+    <div class="cell cell-multi">
+      <div class="cell-val">任意授权人可发起<br>但需 X 人分别签名确认</div>
+    </div>
+  </div>
+
+  <!-- Row: 多人确认 -->
+  <div class="compare-grid" style="margin-bottom:8px;">
+    <div class="cell cell-label" style="border:none; background:none; padding:10px 8px;">
+      <div class="cell-label" style="font-size:8.5px; color:#94a3b8; font-weight:700;">多人确认</div>
+    </div>
+    <div class="cell cell-eoa">
+      <div class="cell-val"><span class="tag tag-no">不支持</span><br>一人操作，无任何中间审批</div>
+    </div>
+    <div class="cell cell-smart">
+      <div class="cell-val"><span class="tag tag-yes">支持</span><br>通过插件/模块可实现多角色审批</div>
+    </div>
+    <div class="cell cell-multi">
+      <div class="cell-val"><span class="tag tag-yes">原生支持</span><br>ERC-4337 / Safe 标准实现</div>
+    </div>
+  </div>
+
+  <!-- Row: 恢复/限额/自动化 -->
+  <div class="compare-grid" style="margin-bottom:8px;">
+    <div class="cell cell-label" style="border:none; background:none; padding:10px 8px;">
+      <div class="cell-label" style="font-size:8.5px; color:#94a3b8; font-weight:700;">恢复 / 限额 / 自动化</div>
+    </div>
+    <div class="cell cell-eoa">
+      <div class="cell-val">
+        <span class="tag tag-no">恢复 ✗</span><br>
+        <span class="tag tag-no">限额 ✗</span><br>
+        <span class="tag tag-no">自动化 ✗</span>
+      </div>
+    </div>
+    <div class="cell cell-smart">
+      <div class="cell-val">
+        <span class="tag tag-yes">社交恢复 ✓</span><br>
+        <span class="tag tag-yes">每日限额 ✓</span><br>
+        <span class="tag tag-yes">自动策略 ✓</span>
+      </div>
+    </div>
+    <div class="cell cell-multi">
+      <div class="cell-val">
+        <span class="tag tag-warn">变更多签成员</span><br>
+        <span class="tag tag-warn">间接（靠门槛）</span><br>
+        <span class="tag tag-no">自动化 ✗</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row: Gas -->
+  <div class="compare-grid" style="margin-bottom:8px;">
+    <div class="cell cell-label" style="border:none; background:none; padding:10px 8px;">
+      <div class="cell-label" style="font-size:8.5px; color:#94a3b8; font-weight:700;">Gas 费用</div>
+    </div>
+    <div class="cell cell-eoa">
+      <div class="cell-val">用户自己支付<br>标准 21,000 gas（ETH转账）</div>
+    </div>
+    <div class="cell cell-smart">
+      <div class="cell-val">可第三方代付<br><strong style="color:#c4b5fd">Paymaster</strong> 机制，新用户免预购 ETH</div>
+    </div>
+    <div class="cell cell-multi">
+      <div class="cell-val">由合约或发起人支付<br>多签执行 gas 成本更高</div>
+    </div>
+  </div>
+
+  <!-- Row: 典型场景 -->
+  <div class="compare-grid">
+    <div class="cell cell-label" style="border:none; background:none; padding:10px 8px;">
+      <div class="cell-label" style="font-size:8.5px; color:#94a3b8; font-weight:700;">典型场景</div>
+    </div>
+    <div class="cell cell-eoa">
+      <div class="cell-val">普通用户日常小额资产<br>不需要复杂权限管理<br>冷钱包（低价值存储）</div>
+    </div>
+    <div class="cell cell-smart">
+      <div class="cell-val">AI Agent 钱包<br>个人资产保护<br>企业级权限管理<br>需要 gas 代付的场景</div>
+    </div>
+    <div class="cell cell-multi">
+      <div class="cell-val">DAO 金库管理<br>企业财务（多人审批）<br>高价值资产长期冷存储<br>团队共管</div>
+    </div>
+  </div>
+</div>
+
+<!-- Who does what -->
+<div class="card">
+  <div class="section-title">▸ 谁能做什么 — 执行流程对比</div>
+  <div class="flow-grid">
+    <div class="flow-col">
+      <div class="flow-col-title">发起交易</div>
+      <div class="flow-item eoa">
+        <div class="fi-who">EOA</div>
+        <div class="fi-desc">仅私钥持有者可发起<br>一步完成，无中间层</div>
+      </div>
+      <div class="flow-item smart">
+        <div class="fi-who">智能账户</div>
+        <div class="fi-desc">授权的 EOA / 合约触发<br>受权限规则约束</div>
+      </div>
+      <div class="flow-item multi">
+        <div class="fi-who">多签账户</div>
+        <div class="fi-desc">任意授权人可发起<br>发起 ≠ 执行（需等待 X 签名）</div>
+      </div>
+    </div>
+    <div class="flow-col">
+      <div class="flow-col-title">批准交易</div>
+      <div class="flow-item eoa">
+        <div class="fi-who">EOA</div>
+        <div class="fi-desc">无批准概念<br>签名即执行</div>
+      </div>
+      <div class="flow-item smart">
+        <div class="fi-who">智能账户</div>
+        <div class="fi-desc">合约逻辑自动审批<br>限额内自动执行<br>超限触发人工确认</div>
+      </div>
+      <div class="flow-item multi">
+        <div class="fi-who">多签账户</div>
+        <div class="fi-desc">达到门槛人数才批准<br>2/3：任意2人签名即执行</div>
+      </div>
+    </div>
+    <div class="flow-col">
+      <div class="flow-col-title">承担风险</div>
+      <div class="flow-item eoa">
+        <div class="fi-who">EOA</div>
+        <div class="fi-desc">私钥持有者独自承担<br>私钥泄露 = 资产全丢<br>无任何保护机制</div>
+      </div>
+      <div class="flow-item smart">
+        <div class="fi-who">智能账户</div>
+        <div class="fi-desc">合约逻辑决定风险边界<br>合约漏洞 → 保护失效<br>监护人作恶 → 可夺权</div>
+      </div>
+      <div class="flow-item multi">
+        <div class="fi-who">多签账户</div>
+        <div class="fi-desc">风险分散至 N 人<br>X 人合谋才可盗取<br>门槛设置过低 = 形同虚设</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Risk -->
+<div class="card">
+  <div class="section-title">▸ 主要风险点</div>
+  <div class="risks-row">
+    <div class="risk-block">
+      <div class="risk-block-title">EOA 风险</div>
+      <div class="risk-item">
+        <div class="ri-title">单点故障</div>
+        <div class="ri-desc">私钥泄露 = 资产永久丢失，无法冻结、无法撤回、无法申诉</div>
+      </div>
+      <div class="risk-item">
+        <div class="ri-title">无权限分层</div>
+        <div class="ri-desc">无法设支出限额，无法区分"日常小额"和"大额转账"，要么全有要么全无</div>
+      </div>
+      <div class="risk-item">
+        <div class="ri-title">无法恢复</div>
+        <div class="ri-desc">助记词丢失 = 资产永远无法找回，没有任何社交恢复选项</div>
+      </div>
+    </div>
+    <div class="risk-block">
+      <div class="risk-block-title">智能账户风险</div>
+      <div class="risk-item">
+        <div class="ri-title">合约漏洞</div>
+        <div class="ri-desc">合约逻辑是安全根基，有漏洞则所有保护机制形同虚设，上链后无法修改</div>
+      </div>
+      <div class="risk-item">
+        <div class="ri-title">监护人风险</div>
+        <div class="ri-desc">社交恢复依赖监护人，监护人合谋可夺走账户控制权</div>
+      </div>
+      <div class="risk-item">
+        <div class="ri-title">AI Agent 误用</div>
+        <div class="ri-desc">Agent 若获得无限制授权，可自主转走全部资产——必须用限额和 Guardrails 约束</div>
+      </div>
+    </div>
+    <div class="risk-block">
+      <div class="risk-block-title">多签账户风险</div>
+      <div class="risk-item">
+        <div class="ri-title">门槛设置过低</div>
+        <div class="ri-desc">1/2 多签几乎无保护意义，1人即可控制；建议至少 2/3 或更高</div>
+      </div>
+      <div class="risk-item">
+        <div class="ri-title">成员变更风险</div>
+        <div class="ri-desc">旧成员退出时若未及时更新配置，恶意成员可趁机夺权</div>
+      </div>
+      <div class="risk-item">
+        <div class="ri-title">无自动化</div>
+        <div class="ri-desc">无法预设自动执行策略，紧急操作需要等待多签确认，响应速度慢</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Agent recommendation -->
+<div class="card">
+  <div class="section-title">▸ AI Agent 场景推荐</div>
+  <div class="rec-grid">
+    <div class="rec-card">
+      <div class="rc-icon">📖</div>
+      <div class="rc-title">Agent 只读链上数据</div>
+      <div class="rc-desc">查询余额、Gas 价格<br>合约源码读取<br>交易历史查看</div>
+      <div class="rc-use">任意账户类型适用</div>
+    </div>
+    <div class="rec-card">
+      <div class="rc-icon">🤖</div>
+      <div class="rc-title">Agent 管理小额操作</div>
+      <div class="rc-desc">日常 DeFi 查询<br>小额 Swap 辅助<br>限额内自动执行</div>
+      <div class="rc-use">→ 智能账户 + 严格限额</div>
+    </div>
+    <div class="rec-card">
+      <div class="rc-icon">👥</div>
+      <div class="rc-title">团队委托 Agent 操作</div>
+      <div class="rc-desc">Agent 提出操作建议<br>多签成员审批执行<br>操作记录透明可查</div>
+      <div class="rc-use">→ 多签账户（Safe）</div>
+    </div>
+    <div class="rec-card">
+      <div class="rc-icon">💎</div>
+      <div class="rc-title">高价值资产管理</div>
+      <div class="rc-desc">大额资产长期存储<br>多人共管<br>完全不接受自动化</div>
+      <div class="rc-use">→ 多签账户 + 离线冷存储</div>
+    </div>
+  </div>
+</div>
+
+<!-- 5-sentence summary -->
+<div class="card">
+  <div class="section-title">▸ 5 句话总结</div>
+  <div class="summary-box">
+    <div class="sb-title">Flow Summary</div>
+    <div class="summary-item">
+      <div class="si-label">解决什么问题</div>
+      <div class="si-text">明确"谁能发起交易、谁能批准、谁承担风险"——三者答案在不同账户类型下完全不同，选错会让 AI Agent 的 Web3 操作要么风险失控，要么根本无法执行。</div>
+    </div>
+    <div class="summary-item">
+      <div class="si-label">AI / Agent 辅助的步骤</div>
+      <div class="si-text">AI 负责分析意图（读取链上数据、评估 Gas、生成操作建议），以及在智能账户的自动化模块中按预设策略触发交易——但都受制于账户类型设定的权限边界。</div>
+    </div>
+    <div class="summary-item">
+      <div class="si-label">必须人工确认的步骤</div>
+      <div class="si-text">签名授权（approve）和交易广播（broadcast）必须在用户钱包内完成；多签场景需达到门槛人数分别确认。AI 无法替代这一步，否则 Agent 持有私钥本身就是最大风险。</div>
+    </div>
+    <div class="summary-item">
+      <div class="si-label">如何验证最终结果</div>
+      <div class="si-text">交易广播后，用 tx hash 在区块浏览器（Etherscan / Sepolia Etherscan）核对状态（success / fail）、事件日志和 Gas 消耗，再对比操作前后钱包余额，确认结果与原始意图一致。</div>
+    </div>
+    <div class="summary-item">
+      <div class="si-label">主要风险点</div>
+      <div class="si-text">EOA 单点故障（私钥丢 = 资产全丢）、智能账户合约漏洞、多签门槛设置过低（1/2 几乎无保护），以及三者的共同风险——用户对 approve 授权范围理解不足被恶意合约滥用。</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  AI × Web3 School — Cohort 0 · Week 1 · EOA vs Smart Account vs Multi-sig · 不含任何私钥或敏感信息
+</div>
+
+</body>
+</html>
