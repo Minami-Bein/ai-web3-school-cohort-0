@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最小 AI × Web3 工作流</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #020617;
+  font-family: 'JetBrains Mono', monospace;
+  color: #f8fafc;
+  padding: 24px;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #34d399;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+h1 { font-size: 18px; font-weight: 700; color: #f8fafc; }
+.subtitle { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* Flow grid */
+.flow-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.flow-step {
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 8px;
+  padding: 14px 10px;
+  text-align: center;
+  border: 1.5px solid;
+  position: relative;
+}
+.flow-step .step-num {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.6;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+.flow-step .step-icon { font-size: 22px; margin-bottom: 6px; }
+.flow-step .step-title { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+.flow-step .step-who { font-size: 8px; opacity: 0.7; margin-bottom: 3px; }
+.flow-step .step-note { font-size: 7.5px; opacity: 0.6; line-height: 1.4; }
+
+/* Arrow connectors */
+.arrow-row {
+  display: grid;
+  grid-template-columns: 1fr 32px 1fr 32px 1fr 32px 1fr 32px 1fr;
+  gap: 0;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.arrow { text-align: center; color: #475569; font-size: 16px; }
+
+/* Color coding for steps */
+.step-user    { border-color: #3b82f6; }
+.step-ai      { border-color: #8b5cf6; }
+.step-human   { border-color: #10b981; }
+.step-wallet  { border-color: #f59e0b; }
+.step-chain   { border-color: #06b6d4; }
+
+.badge {
+  display: inline-block;
+  font-size: 7px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.badge-sign  { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.badge-pay   { background: rgba(245,158,11,0.2); color: #fbbf24; }
+.badge-auth  { background: rgba(239,68,68,0.2); color: #f87171; }
+.badge-must  { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+
+/* Verification row */
+.verify-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.verify-card {
+  background: rgba(6,182,212,0.08);
+  border: 1px solid rgba(6,182,212,0.3);
+  border-radius: 8px;
+  padding: 12px;
+}
+.verify-card .v-icon { font-size: 16px; margin-bottom: 4px; }
+.verify-card .v-title { font-size: 9px; font-weight: 700; color: #22d3ee; margin-bottom: 4px; }
+.verify-card .v-desc { font-size: 8px; color: #94a3b8; line-height: 1.5; }
+
+/* Risk section */
+.risks-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.risk-card {
+  background: rgba(239,68,68,0.06);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 8px;
+  padding: 10px 8px;
+}
+.risk-card .r-num { font-size: 8px; color: #f87171; font-weight: 700; margin-bottom: 4px; }
+.risk-card .r-title { font-size: 8.5px; font-weight: 700; color: #fca5a5; margin-bottom: 3px; }
+.risk-card .r-desc { font-size: 7.5px; color: #94a3b8; line-height: 1.45; }
+
+/* Guardrails */
+.guardrails-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.guard-card {
+  background: rgba(16,185,129,0.06);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 8px;
+  padding: 10px 8px;
+}
+.guard-card .g-title { font-size: 8.5px; font-weight: 700; color: #6ee7b7; margin-bottom: 3px; }
+.guard-card .g-rule  { font-size: 8px; color: #86efac; }
+.guard-card .g-desc  { font-size: 7.5px; color: #94a3b8; line-height: 1.45; margin-top: 3px; }
+
+/* Summary cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 4px;
+}
+.summary-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 14px;
+}
+.summary-card .sc-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+.sc-dot { width: 8px; height: 8px; border-radius: 50%; }
+.sc-title { font-size: 10px; font-weight: 700; color: #f8fafc; }
+.summary-card ul { list-style: none; padding: 0; }
+.summary-card li { font-size: 8.5px; color: #94a3b8; padding: 2px 0; line-height: 1.5; }
+.summary-card li::before { content: '• '; color: #475569; }
+
+.footer {
+  text-align: center;
+  font-size: 8px;
+  color: #334155;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #1e293b;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="dot"></div>
+  <div>
+    <h1>最小 AI × Web3 工作流</h1>
+    <div class="subtitle">AI Agent 生成合约交互说明 → 人工复核 → 钱包确认 → 测试网执行 → 区块浏览器验证</div>
+  </div>
+</div>
+
+<!-- Main flow -->
+<div class="card">
+  <div class="section-title">▸ 执行流程 — 谁发起 / 谁执行 / 何时签名授权</div>
+
+  <div class="flow-container">
+    <div class="flow-step step-user">
+      <div class="step-num">STEP 1</div>
+      <div class="step-icon">👤</div>
+      <div class="step-title">用户发起任务</div>
+      <div class="step-who">发起方：用户</div>
+      <div class="step-note">自然语言描述意图<br>如："帮我把 0.1 ETH换成 USDC"</div>
+    </div>
+
+    <div class="flow-step step-ai">
+      <div class="step-num">STEP 2</div>
+      <div class="step-icon">🤖</div>
+      <div class="step-title">AI Agent 分析</div>
+      <div class="step-who">执行方：AI</div>
+      <div class="step-note">理解意图 → 规划操作序列<br>调用工具读取链上数据</div>
+      <span class="badge badge-auth">只读</span>
+    </div>
+
+    <div class="flow-step step-human">
+      <div class="step-num">STEP 3</div>
+      <div class="step-icon">✅</div>
+      <div class="step-title">人工复核</div>
+      <div class="step-who">执行方：用户</div>
+      <div class="step-note">确认操作意图<br>核对目标地址 / 合约</div>
+      <span class="badge badge-must">必须确认</span>
+    </div>
+
+    <div class="flow-step step-wallet">
+      <div class="step-num">STEP 4</div>
+      <div class="step-icon">🔐</div>
+      <div class="step-title">钱包签名确认</div>
+      <div class="step-who">执行方：用户（钱包内）</div>
+      <div class="step-note">生成交易请求<br>查看 gas 估算</div>
+      <span class="badge badge-sign">签名</span>
+      <span class="badge badge-pay">付 gas</span>
+    </div>
+
+    <div class="flow-step step-chain">
+      <div class="step-num">STEP 5</div>
+      <div class="step-icon">⛓️</div>
+      <div class="step-title">测试网执行</div>
+      <div class="step-who">执行方：区块链网络</div>
+      <div class="step-note">广播 → 验证器打包<br>区块确认 → 状态写入</div>
+    </div>
+  </div>
+
+  <!-- Arrow connectors -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding: 0 20px; margin-bottom: 12px;">
+    <div style="text-align:center;">
+      <div style="font-size:14px; color:#475569;">→</div>
+      <div style="font-size:7px; color:#475569;">HTTP / Tool Call</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:14px; color:#475569;">→</div>
+      <div style="font-size:7px; color:#475569;">显示分析结果</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:14px; color:#475569;">→</div>
+      <div style="font-size:7px; color:#475569;">用户点击确认</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:14px; color:#475569;">→</div>
+      <div style="font-size:7px; color:#475569;">签名 + gas 估算</div>
+    </div>
+  </div>
+
+  <!-- Key distinction -->
+  <div style="background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); border-radius:8px; padding:10px 14px; font-size:8.5px; color:#c4b5fd; line-height:1.6;">
+    <strong style="color:#a78bfa;">⚡ 关键区分：签名(Sign) ≠ 交易确认(Transaction)</strong><br>
+    Sign = 证明"我同意"，不付 gas，不改变链上状态（如 "Sign to login"）<br>
+    Transaction = 真正执行操作，消耗 gas，状态不可逆<br>
+    <strong style="color:#fca5a5;">approve() 授权是最容易被钓鱼的操作 — 授权后合约可转走你的代币</strong>
+  </div>
+</div>
+
+<!-- Verification -->
+<div class="card">
+  <div class="section-title">▸ 结果验证 — 如何确认操作正确执行</div>
+  <div class="verify-grid">
+    <div class="verify-card">
+      <div class="v-icon">🔍</div>
+      <div class="v-title">区块浏览器验证</div>
+      <div class="v-desc">复制 tx hash 到 Etherscan / Sepolia Etherscan<br>确认：状态 success / 事件 event / gas used</div>
+    </div>
+    <div class="verify-card">
+      <div class="v-icon">📋</div>
+      <div class="v-title">收据核对</div>
+      <div class="v-desc">对比原始请求 vs 链上执行结果<br>金额、地址、合约调用是否一致</div>
+    </div>
+    <div class="verify-card">
+      <div class="v-icon">📊</div>
+      <div class="v-title">余额变动确认</div>
+      <div class="v-desc">操作前后对比钱包余额<br>验证资产变动符合预期</div>
+    </div>
+  </div>
+</div>
+
+<!-- Risk section -->
+<div class="card">
+  <div class="section-title">▸ 风险点 — 每一层都可能出错</div>
+  <div class="risks-grid">
+    <div class="risk-card">
+      <div class="r-num">RISK ①</div>
+      <div class="r-title">Prompt Injection</div>
+      <div class="r-desc">恶意指令注入用户输入<br>→ AI 执行非预期操作<br><strong style="color:#fca5a5;">防御：指令边界，外部输入不能覆盖核心指令</strong></div>
+    </div>
+    <div class="risk-card">
+      <div class="r-num">RISK ②</div>
+      <div class="r-title">钓鱼签名请求</div>
+      <div class="r-desc">伪造 DApp 诱导签名恶意 approve()<br>→ 授权后资产可被转走<br><strong style="color:#fca5a5;">防御：显示完整操作摘要，明确告知授权额度</strong></div>
+    </div>
+    <div class="risk-card">
+      <div class="r-num">RISK ③</div>
+      <div class="r-title">错误目标地址</div>
+      <div class="r-desc">剪贴板篡改 / 复制错误<br>→ 资产转至恶意地址<br><strong style="color:#fca5a5;">防御：地址格式校验 + 历史记录匹配</strong></div>
+    </div>
+    <div class="risk-card">
+      <div class="r-num">RISK ④</div>
+      <div class="r-title">恶意授权额度</div>
+      <div class="r-desc">approve 不设限<br>→ 合约可转走全部余额<br><strong style="color:#fca5a5;">防御：仅授权本次所需数量，定期撤销</strong></div>
+    </div>
+    <div class="risk-card">
+      <div class="r-num">RISK ⑤</div>
+      <div class="r-title">合约未审计</div>
+      <div class="r-desc">调用含漏洞的合约<br>→ 资金不可逆损失<br><strong style="color:#fca5a5;">防御：仅用审计过的合约，多 RPC 交叉验证</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- Guardrails -->
+<div class="card">
+  <div class="section-title">▸ Guardrails — 最小安全原则</div>
+  <div class="guardrails-grid">
+    <div class="guard-card">
+      <div class="g-title">只读 → 自动</div>
+      <div class="g-rule">✅ 可执行</div>
+      <div class="g-desc">查余额、读合约源码<br>获取 gas 价格<br>读取交易历史</div>
+    </div>
+    <div class="guard-card">
+      <div class="g-title">写入 → 人工确认</div>
+      <div class="g-rule">⛔ 强制确认</div>
+      <div class="g-desc">转账、approve 授权<br>与新合约交互<br>部署合约</div>
+    </div>
+    <div class="guard-card">
+      <div class="g-title">授权限额</div>
+      <div class="g-rule">⚠️ 明确告知</div>
+      <div class="g-desc">告知授权额度<br>不设无限授权<br>定期清理不必要授权</div>
+    </div>
+    <div class="guard-card">
+      <div class="g-title">合约白名单</div>
+      <div class="g-rule">🔍 审计优先</div>
+      <div class="g-desc">仅与审计过的<br>合约交互<br>避免未知来源</div>
+    </div>
+    <div class="guard-card">
+      <div class="g-title">多源验证</div>
+      <div class="g-rule">🔗 交叉核对</div>
+      <div class="g-desc">多个 RPC 节点<br>多个区块浏览器<br>交叉验证数据</div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="sc-header">
+      <div class="sc-dot" style="background:#3b82f6;"></div>
+      <div class="sc-title">任务发起</div>
+    </div>
+    <ul>
+      <li>用户通过自然语言描述意图</li>
+      <li>AI 解析意图并拆解操作步骤</li>
+      <li>只读步骤自动执行，不需要确认</li>
+    </ul>
+  </div>
+  <div class="summary-card">
+    <div class="sc-header">
+      <div class="sc-dot" style="background:#f59e0b;"></div>
+      <div class="sc-title">钱包签名 / 付款</div>
+    </div>
+    <ul>
+      <li>Step 4 是唯一付 gas 的环节</li>
+      <li>签名在用户钱包内完成，Agent 接触不到私钥</li>
+      <li>approve 授权 ≠ 转账，但风险更高</li>
+    </ul>
+  </div>
+  <div class="summary-card">
+    <div class="sc-header">
+      <div class="sc-dot" style="background:#10b981;"></div>
+      <div class="sc-title">必须人工确认</div>
+    </div>
+    <ul>
+      <li>Step 3：确认操作意图和目标地址</li>
+      <li>Step 4：钱包内主动点击确认</li>
+      <li>高价值操作建议双重确认</li>
+    </ul>
+  </div>
+</div>
+
+<div class="footer">
+  AI × Web3 School — Cohort 0 · Week 1 · 最小工作流示意图 · 不含任何私钥或敏感信息
+</div>
+
+</body>
+</html>
