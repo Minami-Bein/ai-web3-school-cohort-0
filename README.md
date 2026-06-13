@@ -1,211 +1,237 @@
 # Cat-Agent（喵星智能体）
 
-> AI Agent 自主消费 + Cobo Agentic Wallet 授权管理
-> A pet's autonomous spending agent powered by AI perception and on-chain warrant controls
+> AI Agent 自主消费 · Cobo Agentic Wallet 授权管理 · Safe{Wallet} 链上预算管控
+> An AI Agent that helps pets make autonomous purchases — with on-chain warrant controls and wallet authorization
 
 [![Hackathon Cohort 0](https://img.shields.io/badge/Hackathon-AI%20x%20Web3%20School%20Cohort%200-blue)](https://github.com/Minami-Bein/ai-web3-school-cohort-0)
-[![Status](https://img.shields.io/badge/status-Week%204%20Sprint-orange)](./hackathon/16-week4-daily-sprint.md)
+[![Status](https://img.shields.io/badge/status-Week%204%20Sprint-orange)](./hackathon/04-cat-agent-demo-day.md)
+[![Demo Day](https://img.shields.io/badge/Demo-Day%20%E2%9C%85-brightgreen)](./hackathon/03-demo-story.md)
+
+---
+
+## Project Overview
+
+Cat-Agent 是一个**宠物自主消费 AI Agent**。当主人不在家时，猫咪可以通过 AI 感知 + 链上授权，自主发起购买请求——买零食、买玩具。主人拥有完整的钱包控制权，所有交易受日限额 / 单笔限额双重保护。
+
+**Demo Day 状态：** 最小闭环已在本地 Anvil 测试网跑通，完整交易可查证。
+
+- 🐱 **角色：** 宠物（Cat Safe 钱包持有者）
+- 🤖 **引擎：** AI 感知（意图识别）→ 规则引擎（Budget 检查）→ 链上执行（SpendingLimitModule）
+- 🔐 **钱包：** Safe{Wallet} + SpendingLimitModule（Session Key 签名）
+- ⛓️ **链：** Anvil 本地测试网（Sepolia 部署待完成）
 
 ---
 
 ## Problem
 
-Pets cannot express spending needs. When a cat is hungry, it meows — but the owner cannot always respond immediately. Existing pet food ordering requires human intervention: the owner must receive the signal, open an app, search, confirm payment.
+猫咪饿了会叫，但主人无法随时响应。现有宠物食品订购需要人类全程介入：收到信号 → 打开 App → 搜索 → 确认支付。
 
-**Core tension:** Pets have urgent consumption needs, but they lack financial agency and cannot directly access payment systems. This is an AI Agent problem at its core — how to delegate financial authority to an AI that can perceive the world and act within controlled boundaries.
+**核心矛盾：** 宠物有急切的消费需求，但没有金融自主权，无法直接使用支付系统。
 
-The deeper problem is **trust**: How do owners let an AI Agent hold a wallet and spend money on behalf of their pet, without risking runaway spending or malicious use?
-
----
-
-## Track
-
-**Primary:** Cobo — Agentic Economy × Cobo Agentic Wallet
-
-**Secondary:** Z.AI — Web3 × Long-Horizon Task
-
-> Cat-Agent uses Cobo's Agentic Wallet concept as the financial control layer. Each pet has its own Warrant (authorization scope) that defines what the Agent can pay for, within what budget, and for how long. The Z.AI multimodal inference layer provides the perceptual "eyes and ears" for understanding what the pet actually wants.
+更深层的问题是**信任**：主人如何放心让 AI Agent 持有钱包、替宠物花钱，而不担心超支或滥用？
 
 ---
 
-## MVP Flow
+## Why AI
 
-```
-[Cat Mimi] --meows + approaches food bowl-->
-[Cat-Agent Perception] --camera + microphone-->
-[Z.AI Multimodal Inference] --intent: "buy_snack", confidence: 0.94-->
-[Policy Engine] --Warrant check: Budget + Scope + Time Window-->
-[Safe{Wallet}] --Session Key signs USDC transfer (2 USDC)-->
-[Ethereum Sepolia] --tx broadcast + confirmation-->
-[Telegram] --notify owner: "Mimi bought tuna can (2 USDC), daily budget remaining: 8 USDC"-->
-[Audit Log] --intent_log + tx_hash saved to logs/-->
-```
+AI 是唯一能够弥合"宠物意图"与"金融操作"之间鸿沟的技术：
 
-### Minimal闭环
+- **感知层：** AI 多模态模型（摄像头 + 麦克风）理解猫咪当前行为——是在讨食、在玩耍、还是无聊？
+- **推理层：** AI Agent 在预算约束内做决策（买什么、多少钱、是否合规），无需人类实时批准
+- **执行层：** AI 自动协调链上交易、监控余额、记录日志
 
-```
-Input: Cat behavior (audio + video)
-  ↓
-AI Perception: Z.AI / OpenAI multimodal intent inference
-  ↓
-Authorization: Cobo CAW Warrant / local JSON (Budget + Scope + Time)
-  ↓
-Wallet: Safe{Wallet} with SpendingLimitModule (daily: 10 USDC, per-tx: 10 USDC)
-  ↓
-Chain: Ethereum Sepolia (USDC transfer)
-  ↓
-Notification: Telegram text to owner
-  ↓
-Audit: Local JSON log (IPFS-ready)
-```
-
-Full architecture diagram: [08-architecture-minimal-loop.md](./hackathon/08-architecture-minimal-loop.md)
+没有 AI，这套系统就无法理解"猫咪这个动作意味着它想吃金枪鱼"——它只是一台等待人类指令的机器。
 
 ---
 
-## Tech Stack
+## Why Web3
 
-### Core Components
+传统方案（App Store 礼品卡）让主人控制权过度集中；现有加密支付需要人类私钥签名。Web3 解锁的是**自主权下放**：
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Perception** | Z.AI Multimodal API / OpenAI GPT-4o + Whisper | Cat intent inference from camera + microphone |
-| **Strategy** | Z.AI LLM Agent (ReAct loop) | Task decomposition, tool orchestration, self-repair |
-| **Authorization** | Cobo CAW Warrant SDK / local JSON | On-chain budget/scope/time triple-check |
-| **Wallet** | Safe{Wallet} + SpendingLimitModule + Session Key | On-chain wallet with hard spending limits |
-| **Chain** | Ethereum Sepolia + USDC | Transaction execution and confirmation |
-| **Notification** | Telegram Bot API | Real-time push to owner |
-| **Audit** | Local JSON logs (IPFS-ready) | Intent + transaction record archive |
-| **Fallback** | Rule-based intent engine / Hardhat mock | Degradation when external APIs unavailable |
+- **Safe{Wallet} + Session Key：** Agent 持有有限权限的会话密钥，主人随时可撤销——Agent 永远不接触主私钥
+- **SpendingLimitModule：** 链上硬编码日限额 / 单笔限额，超出则交易被合约直接拦截，无法被覆盖
+- **不可篡改的授权记录：** 每笔交易带上意图 + 签名 + 结果，全部上链可查
 
-### Project Structure
+这不是"把信用卡放到链上"，而是**重新定义宠物与支付系统的关系**——Agent 在主人设定的边界内自主决策，边界本身由合约强制执行。
+
+---
+
+## How It Works
 
 ```
-cat-agent/
-├── src/
-│   ├── perception/
-│   │   ├── zai_client.py       # Z.AI API wrapper
-│   │   ├── openai_fallback.py  # OpenAI GPT-4o fallback
-│   │   └── mock_intent.py      # Rule-based mock intent
-│   ├── agent/
-│   │   ├── react_loop.py       # ReAct reasoning loop
-│   │   └── task_state.py       # Task state persistence
-│   ├── wallet/
-│   │   ├── safe_wallet.py      # Safe{Wallet} + Session Key
-│   │   ├── caaw_warrant.py     # Cobo CAW Warrant client
-│   │   ├── policy_engine.py    # Budget + Scope + Time checks
-│   │   └── mock_safe.py        # Hardhat-style mock wallet
-│   ├── tools/
-│   │   ├── mcp_tools.py        # MCP tool definitions
-│   │   └── retry_loop.py       # Exponential backoff retry
-│   ├── audit/
-│   │   └── logger.py           # Audit log writer (local JSON)
-│   └── notify/
-│       └── telegram_bot.py     # Telegram notification
-├── configs/
-│   ├── warrants/               # Local Warrant JSON (CAW fallback)
-│   └── products.json            # Mock product catalog
-├── logs/                        # Audit logs (gitignored)
-├── hackathon/                   # All design docs
-│   ├── 07-week4-verification.md
-│   ├── 10-sponsor-sdk-integration-plan.md
-│   ├── 11-cobo-agentic-wallet-design.md
-│   ├── 12-zai-long-horizon-task-design.md
-│   ├── 13-project-prerequisites-risk-fallback.md
-│   ├── 15-scope-boundary.md
-│   └── 16-week4-daily-sprint.md
-├── .env.example
-└── README.md
+[猫咪行为] ──camera + mic──▶ [AI 感知层]
+                                  │
+                          intent: "buy_snack"
+                          confidence: 0.94
+                                  │
+                                  ▼
+                         [规则引擎]
+                    Warrant 检查（日限额/单笔限额）
+                                  │
+                            ✅ 通过
+                                  │
+                                  ▼
+                         [Safe{Wallet}]
+                    Session Key 签名 USDC 转账
+                                  │
+                                  ▼
+                    [SpendingLimitModule 合约]
+                    ┌─ 日限额拦截（>10 USDC/天）
+                    └─ 单笔限额拦截（>10 USDC/笔）
+                                  │
+                                  ▼
+                         [链上交易广播]
+                                  │
+                                  ▼
+                         [Telegram 通知主人]
+                    "Mimi买了金枪鱼罐头（2 USDC），
+                     日预算剩余：8 USDC"
 ```
+
+**关键参数：**
+- 日限额：10 USDC
+- 单笔限额：10 USDC
+- Cat Safe：`0x70997970C51812dc3A010C7d01b50e0d17dc79C8`
+- 商家：`0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`
+
+---
+
+## Demo
+
+> 📖 完整 Demo 故事（含分镜脚本）：[hackathon/03-demo-story.md](./hackathon/03-demo-story.md)
+> ⚠️ 本次 Demo 基于 Anvil 本地测试网；Z.AI 感知层、Cobo CAW 为 Mock
+
+### 3 分钟 Demo 主流程
+
+**场景：** 主人外出，猫咪 Mimi 想吃金枪鱼罐头
+
+```
+[00:00] 画面：Mimi 对着摄像头叫，走到食物盆旁边
+         ┌─────────────────────────────────────────┐
+         │  AI 感知：检测到猫咪叫声 + 靠近食物盆      │
+         │  intent: buy_snack  |  confidence: 94%  │
+         └─────────────────────────────────────────┘
+              ↓
+[00:45] 画面：规则引擎日志滚动
+         ┌─────────────────────────────────────────┐
+         │  [Policy Engine] Warrant check           │
+         │  日限额：10 USDC ✓                       │
+         │  单笔限额：10 USDC ✓                     │
+         │  商户白名单：通过 ✓                       │
+         │  结论：APPROVED                          │
+         └─────────────────────────────────────────┘
+              ↓
+[01:15] 画面：链上交易签名 + 广播
+         ┌─────────────────────────────────────────┐
+         │  Safe{Wallet} Session Key signs TX       │
+         │  Function: transferUSDC(address,uint256) │
+         │  Amount: 2 USDC → Merchant              │
+         │  TX Hash: 0x70d3...accaa                │
+         └─────────────────────────────────────────┘
+              ↓
+[01:45] 画面：Etherscan 截图 / cast receipt 输出
+         ┌─────────────────────────────────────────┐
+         │  Status: ✅ 1 (success)                 │
+         │  Gas Used: 58,194                       │
+         │  Logs: 2 events                         │
+         │  Cat Safe USDC: 94 | Merchant: 6        │
+         └─────────────────────────────────────────┘
+              ↓
+[02:30] 画面：Telegram 通知弹出
+         ┌─────────────────────────────────────────┐
+         │  🐱 Mimi 买了金枪鱼罐头                  │
+         │  💸 2 USDC | 日预算剩余：8 USDC          │
+         │  🔗 tx hash                             │
+         └─────────────────────────────────────────┘
+              ↓
+[03:00] 画面：防御测试——超额交易被链上拦截
+         ┌─────────────────────────────────────────┐
+         │  尝试支付 11 USDC（> 单笔限额）           │
+         │  Status: ❌ REVERTED                    │
+         │  Reason: per_tx_limit exceeded          │
+         │  日限额 / 单笔限额双重拦截验证 ✅         │
+         └─────────────────────────────────────────┘
+```
+
+**Demo 中 Mock / 未完成的部分：**
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| AI 感知层（Z.AI） | 🔶 Mock | 意图通过脚本模拟，confidence=0.94 |
+| Cobo CAW Warrant | 🔶 Mock | Warrant 规则为本地 JSON，未接入 CAW SDK |
+| Telegram 通知 | 🔶 部分完成 | 代码存在，Demo 中以日志替代 |
+| Sepolia 部署 | 🔴 未完成 | 当前在 Anvil 本地测试网运行 |
+
+---
+
+## Validation
+
+所有验证材料可在 [hackathon/04-cat-agent-demo-day.md](./hackathon/04-cat-agent-demo-day.md) 复查。
+
+### 可查证的链上证据
+
+| 验证项 | 证据 |
+|--------|------|
+| **成功交易** | Tx: `0x70d3db2fac2ced63a6ba8263b0fa290dd1d9ef5b4778e7a68014768d0c0accaa` — status=1, Gas=58194, 2 event logs |
+| **Cat Safe USDC 余额** | 94 USDC（转账 3×2 USDC 后）|
+| **商家 USDC 余额** | 6 USDC（收款 3×2 USDC）|
+| **日限额状态** | `getDailyRemaining()` → 8 / 10 USDC |
+| **SLM 存储 slot0** | USDC 地址正确写入 |
+| **SLM 存储 slot1** | dailySpent = 4e6（= 4 USDC，已花）|
+| **单笔超额拦截** | 11 USDC 交易 revert: `per_tx_limit exceeded` ✅ |
+| **日限额超额拦截** | 逻辑存在，待单独测试验证 |
+
+**验证命令（Anvil 本地）：**
+```bash
+# 交易回执
+cast receipt 0x70d3db2fac2ced63a6ba8263b0fa290dd1d9ef5b4778e7a68014768d0c0accaa --rpc-url http://127.0.0.1:8545
+
+# 日限额剩余
+cast call 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0 \
+  "getDailyRemaining()(uint256)" \
+  --from 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
+  --rpc-url http://127.0.0.1:8545
+```
+
+### 技术关键踩坑
+
+⚠️ **`eth_sendTransaction` Anvil bug：** Anvil unlocked 模式下自动签名的交易有缺陷（status=0x0，gas 不够）。解决：改用 `web3.eth.account.sign_transaction` 本地签名 + `eth_sendRawTransaction`。
+
+⚠️ **函数选择器：** 手动拼接 hex 时应使用 `web3.contract.functions.transferUSDC(...).build_transaction()` 自动编码，避免选择器错误。
 
 ---
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| Z.AI API Key not approved in time | 40% | Perception layer fails | Switch to OpenAI Fallback immediately |
-| Cat behavior data is erratic / confidence below threshold | 35% | Frequent "intent unknown" responses | Lower threshold to 0.80, add multi-frame fusion, manual trigger fallback |
-| Safe SpendingLimitModule misconfiguration | 25% | All transactions blocked or none blocked | Deploy on testnet first, run P-01~P-08 checklist |
-| Cobo CAW Access not granted | 25% | Policy Engine uses local JSON only | Policy Engine fully decoupled from CAW SDK; local JSON still validates business logic |
-| Sepolia testnet USDC faucet rate-limited | 15% | Insufficient test funds | Multiple faucets备选; contact sponsor for dedicated test tokens |
+| 风险 | 可能性 | 影响 | 缓解措施 |
+|------|--------|------|----------|
+| **Cobo Agentic Wallet 签名方案未适配** | 🔴 高 | Agent 无法在真实 Safe{Wallet} 发起交易 | P0：验证 `agentkit` 是否支持 `eth_sendRawTransaction` |
+| **Sepolia 真实 USDC 获取** | 🟡 中 | 无法在主网完成端到端 Demo | 已准备多水龙头备选 |
+| **Z.AI API Key 未及时获批** | 🟡 中 | 感知层降级至 OpenAI Fallback | Policy Engine 已解耦，切换不影响链上逻辑 |
+| **日限额重置依赖 block.timestamp** | 🟡 中 | 验证者可 manipulation 时间戳 | 生产环境应使用 Chainlink Time Oracle |
+| **Session Key 撤销机制未测试** | 🟡 中 | Agent 权限无法及时回收 | 待接入 Safe{Wallet} SDK 后验证 |
 
-Full risk analysis: [13-project-prerequisites-risk-fallback.md](./hackathon/13-project-prerequisites-risk-fallback.md)
-
----
-
-## Validation Plan
-
-### Checkpoint Matrix (P0 = Must Have, P1 = Should Have)
-
-| Category | Checkpoint | Type | Evidence |
-|----------|-----------|------|---------|
-| **Agent Trace** | T-01~T-05 | P0 | Screenshot of each reasoning step |
-| **SDK Calls** | S-01~S-06 | P1 | Code comments + actual output |
-| **Testnet TX** | N-01~N-05 | P0 | Etherscan tx hash + block confirmation |
-| **Contract Interaction** | C-01~C-06 | P0 | SpendingLimitModule interception screenshots |
-| **Permission Control** | P-01~P-08 | P1 | 8 interception scenarios documented |
-| **Audit Logging** | A-01~A-06 | P1 | Local JSON log files |
-| **Demo Evidence** | D-01~D-08 | P0 | Screenshots / screencast |
-
-Full Checkpoint spec: [07-week4-verification.md](./hackathon/07-week4-verification.md)
-
-### Week 4 Daily Progress
-
-| Date | Core Task | Minimum Success Criteria |
-|------|-----------|--------------------------|
-| 6/23 (Mon) | Full chain run-through | 1 successful tx on Etherscan |
-| 6/24 (Tue) | Checkpoint matrix completion | 5 P0 Checkpoints with screenshots |
-| 6/25 (Wed) | Fallback freeze | No task blocked by external dependency |
-| 6/26 (Thu) | Demo materials | Screencast + screenshots + README |
-| 6/27 (Fri) | Final submission | Hackathon platform submission confirmed |
-
-Full sprint plan: [16-week4-daily-sprint.md](./hackathon/16-week4-daily-sprint.md)
+详细风险分析：[13-project-prerequisites-risk-fallback.md](./hackathon/13-project-prerequisites-risk-fallback.md)
 
 ---
 
-## Design Principles
+## Next Steps
 
-```
-1. Minimum Privilege: Agent never holds master key; only Session Key with warrant-scoped permissions
-2. Defense in Depth: Policy Engine (app-layer) + SpendingLimitModule (chain-layer) dual checks
-3. Auditable: Every operation (success/failure) logged with thought + observation chain
-4. Recoverable: All external dependencies have fallback; task state persisted for resume
-5. Scope Discipline: 3 items cut/deferred/mock for Week 4 to avoid scope creep
-   - Cut: Multi-pet coordination, RLPF auto-update, real delivery API
-   - Deferred: IPFS archiving, ERC-712 report signing, Telegram rich notifications
-   - Mock: Z.AI (until API Key arrives), Cobo CAW (until Access granted), product catalog
-```
-
-Full scope boundary: [15-scope-boundary.md](./hackathon/15-scope-boundary.md)
-
----
-
-## Sponsor Integration
-
-| Sponsor | SDK / API | Purpose | Fallback |
-|---------|-----------|---------|---------|
-| Z.AI | Multimodal Inference API | Cat intent analysis (camera + audio) | OpenAI GPT-4o + Whisper |
-| Cobo | CAW Warrant SDK | On-chain budget/scope/time authorization | Local JSON Warrant |
-| Safe | Safe{Wallet} + SpendingLimitModule | Daily budget hard cap (10 USDC) | Hardhat mock |
-
-Full integration plan: [10-sponsor-sdk-integration-plan.md](./hackathon/10-sponsor-sdk-integration-plan.md)
-
----
-
-## Questions for Sponsor / Mentor
-
-1. **Z.AI**: What is the application process and typical timeline for API Key? Is there a test credit or sandbox available?
-2. **Cobo**: How mature is the CAW SDK documentation? Is there a Python SDK or REST API reference? What is the Access approval process?
-3. **Safe**: What is the correct configuration JSON for SpendingLimitModule (daily 10 USDC, per-tx 10 USDC)? How does it interact with AllowlistGuard?
-
-Full Q&A: [14-questions-for-sponsors-mentors.md](./hackathon/14-questions-for-sponsors-mentors.md)
+| 优先级 | 任务 | 依赖 |
+|--------|------|------|
+| **P0** | 集成 Cobo Agentic Wallet 签名 API（`agentkit`）| Cobo agentkit docs |
+| **P0** | Sepolia 测试网部署（真实 USDC）| Sepolia USDC 水龙头 |
+| **P1** | Safe{Wallet} 1-of-1 创建 + Session Key 绑定 | Safe{Wallet} SDK |
+| **P2** | 竞品对标（Dogo、CatFi）| Token Terminal |
+| **P2** | Pitch Deck / Demo Video | 设计资源 |
 
 ---
 
 ## Team
 
 - **Minami-Bein** — AI × Web3 School Cohort 0
+
+---
 
 ## License
 
